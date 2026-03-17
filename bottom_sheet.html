@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Manager - Bottom Sheet Menu 規範 v3.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Mermaid.js 渲染流程圖 -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; }
+        
+        /* Bottom Sheet 樣式 */
+        .bottom-sheet-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 40;
+        }
+        .bottom-sheet-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #ffffff;
+            border-top-left-radius: 1.5rem;
+            border-top-right-radius: 1.5rem;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        /* 微互動：水波紋 */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        .ripple::after {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #000 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+        .ripple:active::after {
+            transform: scale(0, 0);
+            opacity: .1;
+            transition: 0s;
+        }
+
+        .custom-radio { font-size: 1.25rem; color: #cbd5e1; }
+        .selected .custom-radio { color: #2563eb; }
+        
+        .tab-btn.active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* 隱藏預設捲軸以優化拖曳體驗 */
+        #mermaid-container::-webkit-scrollbar {
+            display: none;
+        }
+        #mermaid-container {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold text-blue-600">&#9776;</span>
+                <h1 class="text-xl font-bold">Device Manager <span class="text-slate-500 font-normal">| UI/UX 規範 v3</span></h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 mt-8 space-y-12">
+
+        <!-- 區塊 1：Bottom Sheet Menu 互動規範 -->
+        <section id="intro">
+            <h2 class="text-2xl font-bold mb-4">1. Bottom Sheet Menu 互動規範</h2>
+            <p class="text-lg text-slate-600 leading-relaxed bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                本區塊說明在 Device Manager 中，於 Bottom Sheet 內使用 List Menu 時的核心規範。由於手機端空間有限且通常具備過濾、設定等目的，控制元件、背景狀態與執行時機的定義必須非常精確，以免造成 IT 管理員在維護大量設備時產生操作上的困惑。
+            </p>
+        </section>
+
+        <!-- 區塊 2：行為與狀態分析矩陣 -->
+        <section id="matrix" class="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold mb-2">2. 行為與狀態分析矩陣 (含模擬器)</h2>
+                <p class="text-slate-500 text-sm">點擊下方頁籤切換不同的選單模式，並點擊「啟動模擬器」直接體驗 Bottom Sheet 的真實互動。</p>
+            </div>
+
+            <div class="flex border-b border-slate-200 mb-6 overflow-x-auto">
+                <button class="tab-btn active px-4 py-3 text-slate-600 hover:bg-slate-50 whitespace-nowrap transition-colors" data-mode="single">單選模式</button>
+                <button class="tab-btn px-4 py-3 text-slate-600 hover:bg-slate-50 whitespace-nowrap transition-colors" data-mode="multi">複選模式</button>
+                <button class="tab-btn px-4 py-3 text-blue-600 hover:bg-slate-50 whitespace-nowrap transition-colors bg-blue-50/50" data-mode="hybrid">複合模式 (Hybrid)</button>
+                <button class="tab-btn px-4 py-3 text-slate-600 hover:bg-slate-50 whitespace-nowrap transition-colors" data-mode="action">純執行/入口</button>
+            </div>
+
+            <!-- 新增：元件視覺預覽區 -->
+            <div class="mb-6">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">元件視覺預覽</p>
+                <div id="component-preview" class="flex justify-center items-center py-8 bg-slate-50 border border-slate-200 rounded-xl shadow-inner min-h-[100px]">
+                    <!-- 動態載入預覽元件 -->
+                </div>
+            </div>
+
+            <div id="matrix-content" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 動態載入內容 -->
+            </div>
+
+            <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <h4 class="font-bold text-blue-800 mb-1">互動體驗區</h4>
+                    <p class="text-sm text-blue-600">啟動以測試此模式下 Bottom Sheet 的點擊範圍與回饋。</p>
+                </div>
+                <button id="btn-launch-simulator" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors">
+                    啟動模擬器 &#9654;
+                </button>
+            </div>
+        </section>
+
+        <!-- 區塊 3：UX 專家重點補充解析 -->
+        <section id="expert-tips" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="col-span-full mb-2">
+                <h2 class="text-2xl font-bold mb-2">3. &#128161; UX 專家重點解析</h2>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow border-t-4 border-t-pink-500">
+                <div class="text-2xl mb-3 text-pink-500">&#128681;</div>
+                <h4 class="font-bold text-lg mb-2">複合元件熱區切分 (Hybrid Row)</h4>
+                <p class="text-slate-600 text-sm">當 List 本身可被選也可做為入口時，<strong class="text-pink-600">只需定義並切分點擊範圍</strong>。左側控制項區域負責「選取」，右側文字/箭頭負責「導航」。絕不能點擊整列同時觸發兩種行為。</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow border-t-4 border-t-amber-500">
+                <div class="text-2xl mb-3 text-amber-500">&#9888;</div>
+                <h4 class="font-bold text-lg mb-2">狀態保留 (非必要，視情況)</h4>
+                <p class="text-slate-600 text-sm">並非所有帶控制項的選單都必須永久保留狀態。若為「全域過濾器」應保留；若為「一次性派發任務」，則下次展開時應重設狀態，避免歷史選項干擾。</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow border-t-4 border-t-indigo-500">
+                <div class="text-2xl mb-3 text-indigo-500">&#10004;</div>
+                <h4 class="font-bold text-lg mb-2">雙重 Active 避讓原則</h4>
+                <p class="text-slate-600 text-sm">只要有單選/複選控制項，就不需要給予整列背景色（避免雙重反饋），僅需保留按下瞬間的 Ripple 水波紋。純導航入口則可透過背景色標示 Focus 狀態。</p>
+            </div>
+        </section>
+
+        <!-- 區塊 4：設計判斷流程圖 (Mermaid + Zoom/Pan) -->
+        <section id="flowchart-section" class="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold mb-2">4. Menu 元件設計判斷流程</h2>
+                <p class="text-slate-500 text-sm">此流程圖定義了在設計 Bottom Sheet 內的清單項目時，何時該給予控制項、何時該保留狀態，以及如何處理複合型入口。</p>
+                <p class="text-blue-600 text-sm font-medium mt-1">&#128269; 提示：您可以使用滑鼠滾輪縮放，或按住左鍵拖曳移動視角。</p>
+            </div>
+            
+            <!-- 具備 Pan/Zoom 功能的容器 -->
+            <div id="mermaid-container" class="relative w-full h-[600px] overflow-hidden bg-slate-50 border border-slate-200 rounded-lg shadow-inner cursor-grab active:cursor-grabbing">
+                
+                <!-- 縮放控制面板 -->
+                <div class="absolute bottom-4 right-4 flex gap-1 z-10 bg-white/90 p-1.5 rounded-lg shadow-md border border-slate-200 backdrop-blur-sm">
+                    <button id="btn-zoom-in" class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-700 font-bold transition-colors text-lg">+</button>
+                    <div class="w-px bg-slate-200 my-1"></div>
+                    <button id="btn-zoom-out" class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-700 font-bold transition-colors text-lg">-</button>
+                    <div class="w-px bg-slate-200 my-1"></div>
+                    <button id="btn-zoom-reset" class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-700 font-bold transition-colors" title="重設視角">&#8635;</button>
+                </div>
+
+                <!-- 內部內容層 -->
+                <div id="mermaid-wrapper" class="w-full h-full flex items-center justify-center origin-center">
+                    <pre class="mermaid w-full text-center select-none">
+graph TD
+    Start([開始: 設計 Bottom Sheet Menu]) --> Q1{"是否具備「選擇」行為？"}
+
+    %% ================= 路徑：需要控制項 =================
+    Q1 -- "是" --> Q_SelectionMode{"選擇情境與模式為何？"}
+
+    Q_SelectionMode -- "明確的單選" --> Radio["使用 Radio Button (單選)"]
+    Q_SelectionMode -- "明確的複選" --> Checkbox["使用 Checkbox (複選)"]
+    Q_SelectionMode -- "輕量的單/複選" --> CheckIcon["使用 Check Icon (輕量標示)"]
+
+    Radio --> Q_IsEntry{"是否同時作為<br/>「階層選單的入口」？"}
+    Checkbox --> Q_IsEntry
+    CheckIcon --> Q_IsEntry
+
+    Q_IsEntry -- "是 (複合型)" --> Hybrid["複合型元件 (Hybrid Row)<br/>左放控制項，右放箭頭 (＞)<br/>[注意] 明確切分點擊熱區"]
+    Q_IsEntry -- "否 (純選擇)" --> PureSelect["純選擇元件<br/>點擊整列皆為切換選取狀態"]
+
+    PureSelect --> Q_Persistence{"是否需保留狀態？"}
+    Hybrid --> Q_Persistence
+
+    Q_Persistence -- "視情況保留" --> StateKeep["若為全域設定(如過濾)：保留狀態<br/>若為一次性任務(如指定目標)：不保留"]
+
+    %% ================= 路徑：不需要控制項 =================
+    Q1 -- "否" --> NoControl["不需要控制項 (No Control btn)"]
+    NoControl --> Q_Action{"該元件的互動目的為何？"}
+
+    Q_Action -- "階層選單的入口" --> NavEntry["純文字 + 箭頭 (＞)<br/>點擊整列引導進入下一層"]
+    Q_Action -- "執行某一動作" --> ActionExec["純文字 / 動作圖示<br/>不具備選取狀態，點擊即執行"]
+
+    %% ================= 節點顏色設定 =================
+    classDef default fill:#fff,stroke:#cbd5e1,stroke-width:2px;
+    classDef startNode fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff;
+    classDef decision fill:#fef3c7,stroke:#f59e0b,stroke-width:2px;
+    classDef control fill:#e0f2fe,stroke:#0284c7,stroke-width:2px;
+    classDef noControl fill:#f8fafc,stroke:#94a3b8,stroke-width:2px;
+    classDef hybridNode fill:#fce7f3,stroke:#db2777,stroke-width:2px;
+
+    class Start startNode;
+    class Q1,Q_SelectionMode,Q_IsEntry,Q_Action,Q_Persistence decision;
+    class Radio,Checkbox,CheckIcon,PureSelect,StateKeep control;
+    class NavEntry,ActionExec noControl;
+    class Hybrid hybridNode;
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Sheet 模擬器 DOM -->
+    <div id="bs-overlay" class="bottom-sheet-overlay"></div>
+    <div id="bs-sheet" class="bottom-sheet max-w-md mx-auto">
+        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-3"></div>
+        <div class="px-6 pb-4 pt-2 border-b border-slate-100 flex justify-between items-center">
+            <h3 id="bs-title" class="font-bold text-lg text-slate-800">Title</h3>
+            <button id="bs-close" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+        </div>
+        <div id="bs-list" class="overflow-y-auto px-2 py-2 flex-grow">
+        </div>
+        <div id="bs-footer" class="p-4 border-t border-slate-100 hidden bg-white">
+            <button id="bs-apply" class="w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 ripple">套用設定</button>
+        </div>
+    </div>
+
+    <!-- 提示通知彈窗 (Toast) -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+        Message
+    </div>
+
+    <script>
+        // 初始化 Mermaid
+        mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#f8fafc', primaryTextColor: '#1e293b', lineColor: '#94a3b8' } });
+
+        // 定義各模式的規範內容
+        const guidelinesData = {
+            single: {
+                title: "單選模式 (Single-select)",
+                selectable: { label: "可被選", desc: "帶有單選控制元件 (Radio Button / Check Icon)" },
+                activeState: { label: "不需要背景色", desc: "控制元件已明確表達「選中」語意。加上背景色會造成冗餘。僅需保留點擊瞬間的 Touch Feedback (Ripple)。" },
+                execution: { label: "選擇後直接執行", desc: "點擊選項即視為確認，系統套用設定並自動向下滑動關閉 Bottom Sheet。" },
+                persistence: { label: "非必要，視情況 (Context-dependent)", desc: "若場景需記住用戶選擇（如全域過濾器），則保留狀態；若為一次性任務指定，下次展開時可重設狀態。" },
+                simItems: ["依名稱排序", "依上線時間排序", "依韌體版本排序", "依 IP 位置排序"],
+                previewHtml: `<div class="flex flex-col gap-3 w-full max-w-xs"><div class="flex items-center w-full bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-blue-600 text-2xl mr-3 leading-none">&#9673;</span><span class="text-slate-700 font-medium">依名稱排序 (Radio)</span></div><div class="flex items-center w-full bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-slate-700 font-medium">依上線時間 (Check Icon)</span><span class="text-blue-600 text-xl ml-auto font-bold leading-none">&#10004;</span></div></div>`
+            },
+            multi: {
+                title: "複選模式 (Multi-select)",
+                selectable: { label: "可被選", desc: "帶有複選控制元件 (Checkbox / Check Icon)" },
+                activeState: { label: "不需要背景色", desc: "同上，依賴 Checkbox 本身的狀態即可。保留背景純淨度有助於用戶在長列表中快速掃視已勾選項。" },
+                execution: { label: "儲存後執行", desc: "因需進行多次點擊，Bottom Sheet 不能自動關閉。需依賴外部的「確認 / 套用」按鈕來觸發執行並關閉。" },
+                persistence: { label: "非必要，視情況 (Context-dependent)", desc: "同單選，依據業務邏輯決定是否保留上次勾選的紀錄。" },
+                simItems: ["顯示離線設備", "顯示低電量設備", "顯示需要更新設備", "隱藏未分組設備"],
+                previewHtml: `<div class="flex items-center w-full max-w-xs bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-blue-600 text-2xl mr-3 leading-none">&#9745;</span><span class="text-slate-700 font-medium">顯示離線設備 (複選)</span></div>`
+            },
+            hybrid: {
+                title: "複合模式 (Hybrid Row)",
+                selectable: { label: "可被選、也可導覽", desc: "帶有控制元件 (左側)，同時具備進入下一層的入口箭頭 (右側)。" },
+                activeState: { label: "依點擊區域而定", desc: "點擊左側控制項無背景色；點擊右側入口時可有 Active 背景色反饋。" },
+                execution: { label: "切分點擊熱區 & 儲存後執行", desc: "除了點擊左側 Checkbox 為選取、右側為跳轉外，因選單內含有多組不同模式的設定，必須依賴底部的「套用設定」按鈕統一儲存執行。" },
+                persistence: { label: "非必要，視情況 (Context-dependent)", desc: "通常群組選取狀態會保留，以便返回上層時確認已選群組。" },
+                simItems: ["A棟教學樓群組", "B棟實驗大樓群組", "行政區設備群組"],
+                previewHtml: `<div class="flex items-center w-full max-w-sm bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="px-5 py-3 bg-blue-50/50 border-r border-slate-100 border-dashed relative hover:bg-blue-50 cursor-pointer" title="選取熱區"><span class="text-blue-600 text-2xl leading-none">&#9745;</span></div><div class="px-5 py-3 flex-grow flex justify-between items-center hover:bg-slate-50 cursor-pointer" title="導覽熱區"><span class="text-slate-700 font-medium">A棟教學樓群組</span><span class="text-slate-400 text-lg leading-none">&#10095;</span></div></div>`
+            },
+            action: {
+                title: "純執行/入口 (Non-selectable)",
+                selectable: { label: "不可被選", desc: "無控制元件，純文字或動作圖示" },
+                activeState: { label: "依情境判斷", desc: "若為階層入口（標示當前位置），可給予 Active 背景色；若僅為執行動作，則無背景色，僅需 Touch Feedback。" },
+                execution: { label: "點擊即執行", desc: "點擊後立即觸發任務（或跳轉頁面），並同時關閉 Bottom Sheet。" },
+                persistence: { label: "一次性使用 (不保留)", desc: "無選取狀態可言，下次再打開時，選單外觀會重設回預設樣貌（如同第一次打開）。" },
+                simItems: ["&#10133; 建立新群組", "&#8635; 重新整理列表", "&#9881; 群組進階設定", "&#10060; 刪除選取裝置"],
+                previewHtml: `<div class="flex items-center w-full max-w-xs bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-slate-700 font-medium">&#10133; 建立新群組</span><span class="text-slate-400 text-lg ml-auto leading-none">&#10095;</span></div>`
+            }
+        };
+
+        let currentMode = 'single';
+        let simulatorState = {
+            single: 0, 
+            multi: [false, true, false, false],
+            hybrid: {
+                hybridChecks: [false, false],
+                multiChecks: [true, false],
+                singleRadio: 0
+            }
+        };
+
+        // 渲染矩陣內容
+        function renderMatrix(mode) {
+            const data = guidelinesData[mode];
+            const container = document.getElementById('matrix-content');
+            const previewContainer = document.getElementById('component-preview');
+            
+            // 更新視覺預覽
+            previewContainer.innerHTML = data.previewHtml;
+
+            const createCard = (title, item) => `
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    <h5 class="text-sm font-semibold text-slate-500 mb-1">${title}</h5>
+                    <p class="font-bold text-slate-800 mb-2">${item.label}</p>
+                    <p class="text-sm text-slate-600">${item.desc}</p>
+                </div>
+            `;
+
+            container.innerHTML = `
+                ${createCard('List 本身可否被選', data.selectable)}
+                ${createCard('雙重 Active 狀態 (背景色)', data.activeState)}
+                ${createCard('執行時機與點擊行為', data.execution)}
+                ${createCard('狀態保留 (Persistence)', data.persistence)}
+            `;
+        }
+
+        // 頁籤切換邏輯
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active', 'text-blue-600', 'bg-blue-50/50');
+                    b.classList.add('text-slate-600');
+                });
+                e.target.classList.add('active');
+                if(e.target.dataset.mode === 'hybrid') {
+                    e.target.classList.add('text-blue-600', 'bg-blue-50/50');
+                    e.target.classList.remove('text-slate-600');
+                }
+                currentMode = e.target.dataset.mode;
+                renderMatrix(currentMode);
+            });
+        });
+
+        // Bottom Sheet 元素
+        const bsOverlay = document.getElementById('bs-overlay');
+        const bsSheet = document.getElementById('bs-sheet');
+        const bsTitle = document.getElementById('bs-title');
+        const bsList = document.getElementById('bs-list');
+        const bsFooter = document.getElementById('bs-footer');
+        const bsClose = document.getElementById('bs-close');
+        const bsApply = document.getElementById('bs-apply');
+        const btnLaunch = document.getElementById('btn-launch-simulator');
+        const toast = document.getElementById('toast');
+
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        }
+
+        function openBottomSheet() {
+            bsTitle.innerHTML = guidelinesData[currentMode].title;
+            renderSimulatorItems();
+            
+            if (currentMode === 'multi' || currentMode === 'hybrid') {
+                bsFooter.classList.remove('hidden');
+            } else {
+                bsFooter.classList.add('hidden');
+            }
+
+            bsOverlay.classList.add('active');
+            bsSheet.classList.add('active');
+        }
+
+        function closeBottomSheet() {
+            bsOverlay.classList.remove('active');
+            bsSheet.classList.remove('active');
+        }
+
+        // 渲染模擬器清單
+        function renderSimulatorItems() {
+            bsList.innerHTML = '';
+            const items = guidelinesData[currentMode].simItems;
+
+            if (currentMode === 'hybrid') {
+                // 輔助函數：建立群組標題
+                const addHeader = (text) => {
+                    const h = document.createElement('div');
+                    h.className = 'px-4 py-2 bg-slate-100 text-xs font-bold text-slate-500 uppercase tracking-wider sticky top-0 z-10';
+                    h.innerText = text;
+                    bsList.appendChild(h);
+                };
+
+                // 第 1 組：複合模式 (Hybrid)
+                addHeader('群組設定 (複合模式)');
+                ['A棟教學樓群組', 'B棟實驗大樓群組'].forEach((itemText, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = `flex items-center justify-between border-b border-slate-50`;
+                    const isChecked = simulatorState.hybrid.hybridChecks[index];
+                    
+                    itemDiv.innerHTML = `
+                        <!-- 左側熱區：選取 -->
+                        <div class="py-4 pl-4 pr-2 cursor-pointer hit-area-select" data-index="${index}">
+                            <span class="text-2xl ${isChecked ? 'text-blue-600' : 'text-slate-300'}">${isChecked ? '&#9745;' : '&#9744;'}</span>
+                        </div>
+                        <!-- 右側熱區：導航 -->
+                        <div class="py-4 pr-4 pl-2 flex-grow flex justify-between items-center cursor-pointer ripple hit-area-nav" data-index="${index}">
+                            <span class="text-slate-700 font-medium">${itemText}</span>
+                            <span class="text-slate-400 ml-auto">&#10095;</span>
+                        </div>
+                    `;
+
+                    // 綁定獨立事件
+                    itemDiv.querySelector('.hit-area-select').addEventListener('click', (e) => {
+                        simulatorState.hybrid.hybridChecks[index] = !simulatorState.hybrid.hybridChecks[index];
+                        showToast(`已${simulatorState.hybrid.hybridChecks[index] ? '選取' : '取消'}群組：${itemText}`);
+                        renderSimulatorItems();
+                    });
+
+                    itemDiv.querySelector('.hit-area-nav').addEventListener('click', (e) => {
+                        showToast(`進入下一層：${itemText}`);
+                    });
+
+                    bsList.appendChild(itemDiv);
+                });
+
+                // 第 2 組：複選模式 (Checkbox)
+                addHeader('顯示設定 (複選模式)');
+                ['顯示離線設備', '顯示低電量設備'].forEach((itemText, index) => {
+                    const itemDiv = document.createElement('div');
+                    const isChecked = simulatorState.hybrid.multiChecks[index];
+                    itemDiv.className = `p-4 flex items-center cursor-pointer ripple border-b border-slate-50`;
+                    itemDiv.innerHTML = `
+                        <span class="text-2xl mr-3 ${isChecked ? 'text-blue-600' : 'text-slate-300'}">${isChecked ? '&#9745;' : '&#9744;'}</span>
+                        <span class="text-slate-700 font-medium">${itemText}</span>
+                    `;
+                    itemDiv.addEventListener('click', () => {
+                        simulatorState.hybrid.multiChecks[index] = !simulatorState.hybrid.multiChecks[index];
+                        renderSimulatorItems();
+                    });
+                    bsList.appendChild(itemDiv);
+                });
+
+                // 第 3 組：單選模式 (Radio)
+                addHeader('排序方式 (單選模式)');
+                ['依名稱排序', '依上線時間排序'].forEach((itemText, index) => {
+                    const itemDiv = document.createElement('div');
+                    const isSelected = simulatorState.hybrid.singleRadio === index;
+                    itemDiv.className = `p-4 flex items-center cursor-pointer ripple border-b border-slate-50 ${isSelected ? 'selected bg-blue-50/30' : ''}`;
+                    itemDiv.innerHTML = `
+                        <span class="custom-radio text-2xl mr-3">${isSelected ? '&#9673;' : '&#9675;'}</span>
+                        <span class="text-slate-700 font-medium">${itemText}</span>
+                    `;
+                    itemDiv.addEventListener('click', () => {
+                        simulatorState.hybrid.singleRadio = index;
+                        renderSimulatorItems();
+                    });
+                    bsList.appendChild(itemDiv);
+                });
+
+            } else {
+                // 單選、複選、純動作模式
+                items.forEach((itemText, index) => {
+                    const itemDiv = document.createElement('div');
+                    
+                    itemDiv.className = `p-4 flex items-center justify-between cursor-pointer ripple border-b border-slate-50 ${currentMode === 'single' && simulatorState.single === index ? 'selected bg-blue-50/30' : ''}`;
+                    
+                    let iconHtml = '';
+                    if (currentMode === 'single') {
+                        const isSelected = simulatorState.single === index;
+                        iconHtml = `<span class="custom-radio text-2xl mr-3">${isSelected ? '&#9673;' : '&#9675;'}</span>`;
+                    } else if (currentMode === 'multi') {
+                        const isChecked = simulatorState.multi[index];
+                        iconHtml = `<span class="text-2xl mr-3 ${isChecked ? 'text-blue-600' : 'text-slate-300'}">${isChecked ? '&#9745;' : '&#9744;'}</span>`;
+                    } else if (currentMode === 'action') {
+                        iconHtml = `<span class="text-slate-400 ml-auto">&#10095;</span>`;
+                    }
+
+                    itemDiv.innerHTML = `
+                        <div class="flex items-center w-full">
+                            ${currentMode !== 'action' ? iconHtml : ''}
+                            <span class="text-slate-700 font-medium">${itemText}</span>
+                            ${currentMode === 'action' ? iconHtml : ''}
+                        </div>
+                    `;
+
+                    itemDiv.addEventListener('click', () => {
+                        handleSimulatorClick(index, itemDiv, itemText);
+                    });
+
+                    bsList.appendChild(itemDiv);
+                });
+            }
+        }
+
+        // 一般模式的點擊處理
+        function handleSimulatorClick(index, element, itemText) {
+            if (currentMode === 'single') {
+                simulatorState.single = index;
+                renderSimulatorItems(); 
+                showToast(`已選擇：${itemText}`);
+                setTimeout(closeBottomSheet, 300); 
+            } else if (currentMode === 'multi') {
+                simulatorState.multi[index] = !simulatorState.multi[index];
+                renderSimulatorItems();
+            } else if (currentMode === 'action') {
+                element.style.backgroundColor = '#f1f5f9';
+                showToast(`執行動作：${itemText.replace(/&#\d+;/g, '')}`);
+                setTimeout(() => {
+                    element.style.backgroundColor = '';
+                    closeBottomSheet();
+                }, 300);
+            }
+        }
+
+        // 事件綁定
+        btnLaunch.addEventListener('click', openBottomSheet);
+        bsClose.addEventListener('click', closeBottomSheet);
+        bsOverlay.addEventListener('click', closeBottomSheet);
+        bsApply.addEventListener('click', () => {
+            const btn = document.getElementById('bs-apply');
+            btn.innerHTML = '&#10004; 套用設定成功';
+            setTimeout(() => {
+                btn.innerHTML = '套用設定';
+                closeBottomSheet();
+            }, 500);
+        });
+
+        // ----------------------------------------------------
+        // 流程圖 Pan & Zoom 功能實作
+        // ----------------------------------------------------
+        document.addEventListener("DOMContentLoaded", () => {
+            const zoomContainer = document.getElementById('mermaid-container');
+            const zoomWrapper = document.getElementById('mermaid-wrapper');
+            let scale = 1;
+            let isDragging = false;
+            let startX, startY;
+            let translateX = 0, translateY = 0;
+
+            function updateTransform() {
+                zoomWrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            }
+
+            // 拖曳平移 (Pan)
+            zoomContainer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateTransform();
+            });
+
+            // 滾輪縮放 (Zoom)
+            zoomContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomIntensity = 0.05;
+                const delta = e.deltaY < 0 ? 1 : -1;
+                scale += delta * zoomIntensity;
+                scale = Math.min(Math.max(0.4, scale), 3); // 限制縮放範圍 0.4x ~ 3x
+                updateTransform();
+            });
+
+            // 面板按鈕控制
+            document.getElementById('btn-zoom-in').addEventListener('click', () => {
+                scale = Math.min(scale + 0.2, 3);
+                updateTransform();
+            });
+
+            document.getElementById('btn-zoom-out').addEventListener('click', () => {
+                scale = Math.max(scale - 0.2, 0.4);
+                updateTransform();
+            });
+
+            document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                updateTransform();
+            });
+        });
+
+        // 初始載入
+        renderMatrix('single');
+    </script>
+</body>
+</html>
