@@ -69,9 +69,103 @@
             transition: 0s;
         }
 
-        .custom-radio { font-size: 1.25rem; color: #cbd5e1; }
-        .selected .custom-radio { color: #2563eb; }
-        
+        /* ── Figma Menu Item Styles ──────────────────────────── */
+        .figma-menu-row {
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            background: transparent;
+        }
+        .figma-menu-row:active .figma-state-layer,
+        .figma-menu-row.ripple:active .figma-state-layer {
+            background: rgba(0, 0, 0, 0.06);
+        }
+        .figma-state-layer {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 8px 12px;
+            gap: 8px;
+            min-height: 48px;
+            border-radius: 8px;
+        }
+        .figma-item-label {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-weight: 400;
+            font-size: 16px;
+            line-height: 1.2;
+            letter-spacing: 0.02em;
+            color: #333333;
+            flex: 1;
+        }
+        .figma-arrow {
+            width: 20px;
+            height: 20px;
+            color: #555;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            opacity: 0.5;
+        }
+        .figma-divider-line {
+            height: 1px;
+            background: #E5E5E5;
+            margin: 0 12px;
+        }
+        /* Radio Button */
+        .figma-radio {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1.5px solid #000000;
+            background: #FFFFFF;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .figma-radio.is-selected {
+            border-color: #3C5AAA;
+            border-width: 2px;
+        }
+        .figma-radio.is-selected::after {
+            content: '';
+            width: 9px;
+            height: 9px;
+            background: #3C5AAA;
+            border-radius: 50%;
+            display: block;
+        }
+        /* Checkbox */
+        .figma-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1.5px solid #000000;
+            background: #FFFFFF;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .figma-checkbox.is-checked {
+            border-color: #3C5AAA;
+            background: #3C5AAA;
+        }
+        .figma-checkbox.is-checked::after {
+            content: '';
+            width: 10px;
+            height: 6px;
+            border-left: 2px solid white;
+            border-bottom: 2px solid white;
+            transform: rotate(-45deg) translateY(-1px);
+            display: block;
+        }
+
         .tab-btn.active {
             border-bottom: 2px solid #2563eb;
             color: #2563eb;
@@ -276,7 +370,7 @@ graph TD
                 execution: { label: "選擇後直接執行", desc: "點擊選項即視為確認，系統套用設定並自動向下滑動關閉 Bottom Sheet。" },
                 persistence: { label: "非必要，視情況 (Context-dependent)", desc: "若場景需記住用戶選擇（如全域過濾器），則保留狀態；若為一次性任務指定，下次展開時可重設狀態。" },
                 simItems: ["依名稱排序", "依上線時間排序", "依韌體版本排序", "依 IP 位置排序"],
-                previewHtml: `<div class="flex flex-col gap-3 w-full max-w-xs"><div class="flex items-center w-full bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-blue-600 text-2xl mr-3 leading-none">&#9673;</span><span class="text-slate-700 font-medium">依名稱排序 (Radio)</span></div><div class="flex items-center w-full bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-slate-700 font-medium">依上線時間 (Check Icon)</span><span class="text-blue-600 text-xl ml-auto font-bold leading-none">&#10004;</span></div></div>`
+                previewHtml: `<div class="flex flex-col w-full max-w-xs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><div class="figma-radio is-selected"></div><span class="figma-item-label">依名稱排序</span></div></div><div class="figma-divider-line"></div><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><div class="figma-radio"></div><span class="figma-item-label">依上線時間排序</span></div></div><div class="figma-divider-line"></div><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><div class="figma-radio"></div><span class="figma-item-label">依韌體版本排序</span></div></div></div>`
             },
             multi: {
                 title: "複選模式 (Multi-select)",
@@ -285,7 +379,7 @@ graph TD
                 execution: { label: "儲存後執行", desc: "因需進行多次點擊，Bottom Sheet 不能自動關閉。需依賴外部的「確認 / 套用」按鈕來觸發執行並關閉。" },
                 persistence: { label: "非必要，視情況 (Context-dependent)", desc: "同單選，依據業務邏輯決定是否保留上次勾選的紀錄。" },
                 simItems: ["顯示離線設備", "顯示低電量設備", "顯示需要更新設備", "隱藏未分組設備"],
-                previewHtml: `<div class="flex items-center w-full max-w-xs bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-blue-600 text-2xl mr-3 leading-none">&#9745;</span><span class="text-slate-700 font-medium">顯示離線設備 (複選)</span></div>`
+                previewHtml: `<div class="flex flex-col w-full max-w-xs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><div class="figma-checkbox is-checked"></div><span class="figma-item-label">顯示離線設備</span></div></div><div class="figma-divider-line"></div><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><div class="figma-checkbox"></div><span class="figma-item-label">顯示低電量設備</span></div></div><div class="figma-divider-line"></div><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><div class="figma-checkbox is-checked"></div><span class="figma-item-label">顯示需要更新設備</span></div></div></div>`
             },
             hybrid: {
                 title: "複合模式 (Hybrid Row)",
@@ -294,7 +388,7 @@ graph TD
                 execution: { label: "切分點擊熱區 & 儲存後執行", desc: "除了點擊左側 Checkbox 為選取、右側為跳轉外，因選單內含有多組不同模式的設定，必須依賴底部的「套用設定」按鈕統一儲存執行。" },
                 persistence: { label: "非必要，視情況 (Context-dependent)", desc: "通常群組選取狀態會保留，以便返回上層時確認已選群組。" },
                 simItems: ["A棟教學樓群組", "B棟實驗大樓群組", "行政區設備群組"],
-                previewHtml: `<div class="flex items-center w-full max-w-sm bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="px-5 py-3 bg-blue-50/50 border-r border-slate-100 border-dashed relative hover:bg-blue-50 cursor-pointer" title="選取熱區"><span class="text-blue-600 text-2xl leading-none">&#9745;</span></div><div class="px-5 py-3 flex-grow flex justify-between items-center hover:bg-slate-50 cursor-pointer" title="導覽熱區"><span class="text-slate-700 font-medium">A棟教學樓群組</span><span class="text-slate-400 text-lg leading-none">&#10095;</span></div></div>`
+                previewHtml: `<div class="flex flex-col w-full max-w-sm bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="flex items-center w-full"><div class="figma-state-layer cursor-pointer" style="flex:none;padding-right:8px;border-right:1px dashed #e2e8f0" title="選取熱區"><div class="figma-checkbox is-checked"></div></div><div class="figma-state-layer flex-1 cursor-pointer" title="導覽熱區"><span class="figma-item-label">A棟教學樓群組</span><div class="figma-arrow">›</div></div></div><div class="figma-divider-line"></div><div class="flex items-center w-full"><div class="figma-state-layer cursor-pointer" style="flex:none;padding-right:8px;border-right:1px dashed #e2e8f0" title="選取熱區"><div class="figma-checkbox"></div></div><div class="figma-state-layer flex-1 cursor-pointer" title="導覽熱區"><span class="figma-item-label">B棟實驗大樓群組</span><div class="figma-arrow">›</div></div></div></div>`
             },
             action: {
                 title: "純執行/入口 (Non-selectable)",
@@ -303,7 +397,7 @@ graph TD
                 execution: { label: "點擊即執行", desc: "點擊後立即觸發任務（或跳轉頁面），並同時關閉 Bottom Sheet。" },
                 persistence: { label: "一次性使用 (不保留)", desc: "無選取狀態可言，下次再打開時，選單外觀會重設回預設樣貌（如同第一次打開）。" },
                 simItems: ["&#10133; 建立新群組", "&#8635; 重新整理列表", "&#9881; 群組進階設定", "&#10060; 刪除選取裝置"],
-                previewHtml: `<div class="flex items-center w-full max-w-xs bg-white px-5 py-3 rounded-xl shadow-sm border border-slate-200"><span class="text-slate-700 font-medium">&#10133; 建立新群組</span><span class="text-slate-400 text-lg ml-auto leading-none">&#10095;</span></div>`
+                previewHtml: `<div class="flex flex-col w-full max-w-xs bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><span class="figma-item-label">＋ 建立新群組</span><div class="figma-arrow">›</div></div></div><div class="figma-divider-line"></div><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><span class="figma-item-label">↺ 重新整理列表</span><div class="figma-arrow">›</div></div></div><div class="figma-divider-line"></div><div class="figma-menu-row w-full"><div class="figma-state-layer w-full"><span class="figma-item-label">⚙ 群組進階設定</span><div class="figma-arrow">›</div></div></div></div>`
             }
         };
 
@@ -412,20 +506,21 @@ graph TD
 
                 // 第 1 組：複合模式 (Hybrid)
                 addHeader('群組設定 (複合模式)');
-                ['A棟教學樓群組', 'B棟實驗大樓群組'].forEach((itemText, index) => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = `flex items-center justify-between border-b border-slate-50`;
+                ['A棟教學樓群組', 'B棟實驗大樓群組'].forEach((itemText, index, arr) => {
                     const isChecked = simulatorState.hybrid.hybridChecks[index];
-                    
+                    const isLast = index === arr.length - 1;
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex items-center w-full';
+
                     itemDiv.innerHTML = `
                         <!-- 左側熱區：選取 -->
-                        <div class="py-4 pl-4 pr-2 cursor-pointer hit-area-select" data-index="${index}">
-                            <span class="text-2xl ${isChecked ? 'text-blue-600' : 'text-slate-300'}">${isChecked ? '&#9745;' : '&#9744;'}</span>
+                        <div class="figma-state-layer cursor-pointer hit-area-select" style="flex:none;padding-right:8px;border-right:1px dashed #e2e8f0" data-index="${index}" title="選取熱區">
+                            <div class="figma-checkbox ${isChecked ? 'is-checked' : ''}"></div>
                         </div>
                         <!-- 右側熱區：導航 -->
-                        <div class="py-4 pr-4 pl-2 flex-grow flex justify-between items-center cursor-pointer ripple hit-area-nav" data-index="${index}">
-                            <span class="text-slate-700 font-medium">${itemText}</span>
-                            <span class="text-slate-400 ml-auto">&#10095;</span>
+                        <div class="figma-state-layer flex-grow cursor-pointer ripple hit-area-nav" data-index="${index}" title="導覽熱區">
+                            <span class="figma-item-label">${itemText}</span>
+                            <div class="figma-arrow">›</div>
                         </div>
                     `;
 
@@ -441,65 +536,88 @@ graph TD
                     });
 
                     bsList.appendChild(itemDiv);
+                    if (!isLast) {
+                        const div = document.createElement('div');
+                        div.className = 'figma-divider-line';
+                        bsList.appendChild(div);
+                    }
                 });
 
                 // 第 2 組：複選模式 (Checkbox)
                 addHeader('顯示設定 (複選模式)');
-                ['顯示離線設備', '顯示低電量設備'].forEach((itemText, index) => {
-                    const itemDiv = document.createElement('div');
+                ['顯示離線設備', '顯示低電量設備'].forEach((itemText, index, arr) => {
                     const isChecked = simulatorState.hybrid.multiChecks[index];
-                    itemDiv.className = `p-4 flex items-center cursor-pointer ripple border-b border-slate-50`;
+                    const isLast = index === arr.length - 1;
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'figma-menu-row w-full ripple';
                     itemDiv.innerHTML = `
-                        <span class="text-2xl mr-3 ${isChecked ? 'text-blue-600' : 'text-slate-300'}">${isChecked ? '&#9745;' : '&#9744;'}</span>
-                        <span class="text-slate-700 font-medium">${itemText}</span>
+                        <div class="figma-state-layer w-full">
+                            <div class="figma-checkbox ${isChecked ? 'is-checked' : ''}"></div>
+                            <span class="figma-item-label">${itemText}</span>
+                        </div>
                     `;
                     itemDiv.addEventListener('click', () => {
                         simulatorState.hybrid.multiChecks[index] = !simulatorState.hybrid.multiChecks[index];
                         renderSimulatorItems();
                     });
                     bsList.appendChild(itemDiv);
+                    if (!isLast) {
+                        const div = document.createElement('div');
+                        div.className = 'figma-divider-line';
+                        bsList.appendChild(div);
+                    }
                 });
 
                 // 第 3 組：單選模式 (Radio)
                 addHeader('排序方式 (單選模式)');
-                ['依名稱排序', '依上線時間排序'].forEach((itemText, index) => {
-                    const itemDiv = document.createElement('div');
+                ['依名稱排序', '依上線時間排序'].forEach((itemText, index, arr) => {
                     const isSelected = simulatorState.hybrid.singleRadio === index;
-                    itemDiv.className = `p-4 flex items-center cursor-pointer ripple border-b border-slate-50 ${isSelected ? 'selected bg-blue-50/30' : ''}`;
+                    const isLast = index === arr.length - 1;
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'figma-menu-row w-full ripple';
                     itemDiv.innerHTML = `
-                        <span class="custom-radio text-2xl mr-3">${isSelected ? '&#9673;' : '&#9675;'}</span>
-                        <span class="text-slate-700 font-medium">${itemText}</span>
+                        <div class="figma-state-layer w-full">
+                            <div class="figma-radio ${isSelected ? 'is-selected' : ''}"></div>
+                            <span class="figma-item-label">${itemText}</span>
+                        </div>
                     `;
                     itemDiv.addEventListener('click', () => {
                         simulatorState.hybrid.singleRadio = index;
                         renderSimulatorItems();
                     });
                     bsList.appendChild(itemDiv);
+                    if (!isLast) {
+                        const div = document.createElement('div');
+                        div.className = 'figma-divider-line';
+                        bsList.appendChild(div);
+                    }
                 });
 
             } else {
                 // 單選、複選、純動作模式
-                items.forEach((itemText, index) => {
+                items.forEach((itemText, index, arr) => {
+                    const isLast = index === arr.length - 1;
                     const itemDiv = document.createElement('div');
-                    
-                    itemDiv.className = `p-4 flex items-center justify-between cursor-pointer ripple border-b border-slate-50 ${currentMode === 'single' && simulatorState.single === index ? 'selected bg-blue-50/30' : ''}`;
-                    
-                    let iconHtml = '';
+                    itemDiv.className = 'figma-menu-row w-full ripple';
+
+                    let leftHtml = '';
+                    let rightHtml = '';
+
                     if (currentMode === 'single') {
                         const isSelected = simulatorState.single === index;
-                        iconHtml = `<span class="custom-radio text-2xl mr-3">${isSelected ? '&#9673;' : '&#9675;'}</span>`;
+                        leftHtml = `<div class="figma-radio ${isSelected ? 'is-selected' : ''}"></div>`;
                     } else if (currentMode === 'multi') {
                         const isChecked = simulatorState.multi[index];
-                        iconHtml = `<span class="text-2xl mr-3 ${isChecked ? 'text-blue-600' : 'text-slate-300'}">${isChecked ? '&#9745;' : '&#9744;'}</span>`;
+                        leftHtml = `<div class="figma-checkbox ${isChecked ? 'is-checked' : ''}"></div>`;
                     } else if (currentMode === 'action') {
-                        iconHtml = `<span class="text-slate-400 ml-auto">&#10095;</span>`;
+                        rightHtml = `<div class="figma-arrow">›</div>`;
                     }
 
                     itemDiv.innerHTML = `
-                        <div class="flex items-center w-full">
-                            ${currentMode !== 'action' ? iconHtml : ''}
-                            <span class="text-slate-700 font-medium">${itemText}</span>
-                            ${currentMode === 'action' ? iconHtml : ''}
+                        <div class="figma-state-layer w-full">
+                            ${leftHtml}
+                            <span class="figma-item-label">${itemText}</span>
+                            ${rightHtml}
                         </div>
                     `;
 
@@ -508,6 +626,12 @@ graph TD
                     });
 
                     bsList.appendChild(itemDiv);
+
+                    if (!isLast) {
+                        const divider = document.createElement('div');
+                        divider.className = 'figma-divider-line';
+                        bsList.appendChild(divider);
+                    }
                 });
             }
         }
@@ -523,12 +647,8 @@ graph TD
                 simulatorState.multi[index] = !simulatorState.multi[index];
                 renderSimulatorItems();
             } else if (currentMode === 'action') {
-                element.style.backgroundColor = '#f1f5f9';
-                showToast(`執行動作：${itemText.replace(/&#\d+;/g, '')}`);
-                setTimeout(() => {
-                    element.style.backgroundColor = '';
-                    closeBottomSheet();
-                }, 300);
+                showToast(`執行動作：${itemText}`);
+                setTimeout(closeBottomSheet, 300);
             }
         }
 
